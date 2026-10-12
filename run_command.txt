@@ -1,0 +1,6 @@
+
+# Run the SQL-based ETL
+command: python python\customer_policy_sql_etl.py --date 2026-10-02 --sql sql\customer_policy_transformation.sql
+
+# Run the pure Python ETL
+python python\customer_policy_etl.py --date 2026-10-02
