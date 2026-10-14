@@ -1,8 +1,8 @@
+# Python 3.12 target; install in a virtual environment.
 pandas==2.3.2
 SQLAlchemy==2.0.43
 psycopg2-binary==2.9.10
+psycopg[binary]>=3.2,<4
 python-dotenv==1.1.1
 pytest==8.4.2
 Faker==37.8.0
-psycopg[binary]>=3.2,<4
-python-dotenv>=1.0,<2

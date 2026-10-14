@@ -1,21 +1,19 @@
 
 -- =====================================================
--- DATABASE: etl_quality_test_project
--- TARGET SCHEMA: insurance_tgt
--- TARGET TABLE: customer_policy_summary
+-- DATABASE : etl_quality_test_project
+-- SCHEMA   : insurance_tgt
+-- TABLE    : customer_policy_summary
+-- PURPOSE  : Canonical target DDL
 -- =====================================================
 
--- Step 1: Create target schema
+-- Step 1: Create schema
 CREATE SCHEMA IF NOT EXISTS insurance_tgt;
 
-
 -- Step 2: Create target table
-CREATE TABLE IF NOT EXISTS
-insurance_tgt.customer_policy_summary
+CREATE TABLE IF NOT EXISTS insurance_tgt.customer_policy_summary
 (
+    -- Customer information (1-9)
     customer_id BIGINT PRIMARY KEY,
-
-    -- Customer information
     customer_name VARCHAR(200),
     gender VARCHAR(20),
     age INTEGER,
@@ -25,34 +23,34 @@ insurance_tgt.customer_policy_summary
     state VARCHAR(100),
     customer_status VARCHAR(20),
 
-    -- Policy aggregation
+    -- Policy aggregation (10-14)
     total_policies INTEGER NOT NULL DEFAULT 0,
     active_policies INTEGER NOT NULL DEFAULT 0,
     expired_policies INTEGER NOT NULL DEFAULT 0,
     cancelled_policies INTEGER NOT NULL DEFAULT 0,
     lapsed_policies INTEGER NOT NULL DEFAULT 0,
 
-    -- Financial metrics
+    -- Financial metrics (15-17)
     total_premium NUMERIC(18,2) NOT NULL DEFAULT 0,
     average_premium NUMERIC(18,2) NOT NULL DEFAULT 0,
     total_sum_assured NUMERIC(20,2) NOT NULL DEFAULT 0,
 
-    -- Policy dates
+    -- Policy dates (18-19)
     first_policy_start_date DATE,
     latest_policy_end_date DATE,
 
-    -- Derived attributes
+    -- Derived attributes (20-21)
     customer_category VARCHAR(30),
     policy_holding_status VARCHAR(30),
 
-    -- ETL metadata
-    source_last_updated_at TIMESTAMP,
+    -- ETL metadata (22-26)
+    source_last_updated_at TIMESTAMPTZ,
     business_date DATE NOT NULL,
 
     etl_created_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
 
-    etl_updated_at TIMESTAMPTZ NOT NULL
+    etl_updated_at TIMESTAMPTZ
         DEFAULT CURRENT_TIMESTAMP,
 
     etl_run_id UUID NOT NULL,
@@ -61,15 +59,7 @@ insurance_tgt.customer_policy_summary
     CONSTRAINT chk_total_policies
         CHECK (total_policies >= 0),
 
-    CONSTRAINT chk_policy_counts
-        CHECK (
-            active_policies >= 0
-            AND expired_policies >= 0
-            AND cancelled_policies >= 0
-            AND lapsed_policies >= 0
-        ),
-
-    CONSTRAINT chk_policy_status_total
+    CONSTRAINT chk_policy_reconciliation
         CHECK (
             total_policies =
                 active_policies
@@ -78,26 +68,32 @@ insurance_tgt.customer_policy_summary
                 + lapsed_policies
         ),
 
-    CONSTRAINT chk_total_premium
-        CHECK (total_premium >= 0),
+    CONSTRAINT chk_customer_category
+        CHECK (
+            customer_category IN (
+                'NO_POLICY',
+                'STANDARD',
+                'GOLD',
+                'PLATINUM'
+            )
+        ),
 
-    CONSTRAINT chk_total_coverage
-        CHECK (total_sum_assured >= 0),
-
-    CONSTRAINT chk_age
-        CHECK (age IS NULL OR age >= 0)
+    CONSTRAINT chk_policy_holding_status
+        CHECK (
+            policy_holding_status IN (
+                'NO_POLICY',
+                'ACTIVE_HOLDER',
+                'INACTIVE_HOLDER'
+            )
+        )
 );
 
-
 -- Step 3: Create indexes
-CREATE INDEX IF NOT EXISTS idx_cps_business_date
+CREATE INDEX IF NOT EXISTS idx_customer_policy_business_date
 ON insurance_tgt.customer_policy_summary(business_date);
 
-CREATE INDEX IF NOT EXISTS idx_cps_customer_status
-ON insurance_tgt.customer_policy_summary(customer_status);
+CREATE INDEX IF NOT EXISTS idx_customer_policy_status
+ON insurance_tgt.customer_policy_summary(policy_holding_status);
 
-CREATE INDEX IF NOT EXISTS idx_cps_source_updated
-ON insurance_tgt.customer_policy_summary(source_last_updated_at);
-
-CREATE INDEX IF NOT EXISTS idx_cps_run_id
-ON insurance_tgt.customer_policy_summary(etl_run_id);
+-- Additional financial constraints are excluded
+-- until business decision ISS-007 is approved.
