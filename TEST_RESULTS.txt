@@ -1,0 +1,8 @@
+Static Python compilation: PASS (7 files)
+
+pytest exit code: 0
+.............                                                            [100%]
+13 passed in 0.09s
+
+
+Database integration: NOT RUN (no configured PostgreSQL instance).
